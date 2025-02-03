@@ -1,1 +1,174 @@
+# To pull docker images
+
+"docker pull dpage/pgadmin4:latest"
+
+# To run pgadmin in the docker
+
+"docker run --name pgadmin -e PGADMIN_DEFAULT_EMAIL=admin@admin.com -e PGADMIN_DEFAULT_PASSWORD=admin -p 8080:80 -d dpage/pgadmin4:latest"
+
+# To run postgresql in the docker
+
+"docker pull postgres:17-alpine"
+
+docker run --name postgres-container -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+
+# To run postgresql in the docker
+
+"docker pull kestra/kestra"
+
+# Kestra needs a config file to connect to the database. Create a local directory for configurations:Kestra needs a config file to connect to the database. Create a local directory for configurations:
+
+"mkdir -p $HOME/kestra-config"
+
+# Then, create a config file:
+
+"nano $HOME/kestra-config/config.yml"
+
+# Add the following content:
+
+"kestra:
+  repository:
+    type: postgres
+  queue:
+    type: postgres
+  storage:
+    type: local
+    local:
+      base-path: /app/storage
+
+datasource:
+  url: jdbc:postgresql://postgres:5432/kestra
+  username: kestra
+  password: kestra"
+
+# Now, start Kestra using the config file:
+
+"docker run -d \
+  --name kestra-server \
+  -p 9090:8080 \
+  -v $HOME/kestra-config/config.yml:/app/config.yml \
+  kestra/kestra server standalone"
+
+# Once started, check if it's running properly:
+
+"docker logs -f kestra-server"
+
+# Pulling kestra images 
+
+"curl -o docker-compose.yml \
+https://raw.githubusercontent.com/kestra-io/kestra/develop/docker-compose.yml"
+
+#starting docker-compose
+
+"docker-compose up -d"
+
+# launching kestra
+
+"docker exec -it dataengineering-kestra-1 /bin/sh"
+
+1. ls -lh yellow_tripdata_2020-12.csv
+
+2. {{inputs.taxi}}_tripdata_{{inputs.year}}-{{inputs.month}}.csv
+
+3. Download the Yellow Taxi Data for 2020
+
+  -Combine the CSV Files
+
+  - Create table
+
+CREATE TABLE yellow_taxi_data (
+    vendor_id INT,
+    pickup_datetime TIMESTAMP,
+    dropoff_datetime TIMESTAMP,
+    passenger_count INT,
+    trip_distance FLOAT,
+    fare_amount FLOAT,
+    tip_amount FLOAT,
+    total_amount FLOAT,
+    pickup_location_id INT,
+    dropoff_location_id INT,
+    payment_type INT,
+    trip_type INT
+);
+
+- Load data into the table
+
+COPY yellow_taxi_data
+FROM '/path/to/your/yellow_tripdata_2020.csv'
+DELIMITER ','
+CSV HEADER;
+
+- Count the rows
+
+SELECT COUNT(*) AS total_rows
+FROM yellow_taxi_data
+WHERE pickup_datetime BETWEEN '2020-01-01' AND '2020-12-31';
+
+3. psql -U postgres
+
+CREATE DATABASE green_taxi_data;
+
+psql -U postgres -d green_taxi_data
+
+CREATE TABLE green_taxi_data (
+    vendor_id INT,
+    pickup_datetime TIMESTAMP,
+    dropoff_datetime TIMESTAMP,
+    passenger_count INT,
+    trip_distance FLOAT,
+    fare_amount FLOAT,
+    tip_amount FLOAT,
+    total_amount FLOAT,
+    pickup_location_id INT,
+    dropoff_location_id INT,
+    payment_type INT,
+    trip_type INT
+);
+
+COPY green_taxi_data
+FROM '/path/to/your/green_tripdata_2020-01.csv'
+DELIMITER ','
+CSV HEADER;
+
+SELECT COUNT(*) AS total_rows
+FROM green_taxi_data
+WHERE pickup_datetime BETWEEN '2020-01-01' AND '2020-12-31';
+
+4. psql -U postgres
+
+CREATE DATABASE yellow_taxi_data;
+
+psql -U postgres -d yellow_taxi_data
+
+CREATE TABLE yellow_taxi_data (
+    vendor_id INT,
+    pickup_datetime TIMESTAMP,
+    dropoff_datetime TIMESTAMP,
+    passenger_count INT,
+    trip_distance FLOAT,
+    fare_amount FLOAT,
+    tip_amount FLOAT,
+    total_amount FLOAT,
+    pickup_location_id INT,
+    dropoff_location_id INT,
+    payment_type INT,
+    trip_type INT
+);
+
+COPY yellow_taxi_data
+FROM '/path/to/your/yellow_tripdata_2021-03.csv'
+DELIMITER ','
+CSV HEADER;
+
+SELECT COUNT(*) AS total_rows
+FROM yellow_taxi_data
+WHERE pickup_datetime BETWEEN '2021-03-01' AND '2021-03-31';
+
+5. id: "my-scheduled-flow"
+namespace: "my-namespace"
+tasks:
+  - id: "task1"
+    type: "io.kestra.core.tasks.schedules.Cron"
+    cron: "0 12 * * *" # Cron expression to run at 12:00 PM every day
+    timezone: "America/New_York" # Set New York time zone
 
