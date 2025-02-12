@@ -155,5 +155,4 @@ LIMIT 1;
 
 "terraform destroy"
 
-## Module 2 Homework: Workflow-orchestration
-### Question 1.
+
