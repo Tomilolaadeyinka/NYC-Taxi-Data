@@ -1,1 +1,115 @@
+1. Download & Upload Data
+Download the Yellow Taxi Trip Records for Jan 2024 – June 2024 from the NYC Taxi Data Portal.
+Upload these Parquet files to your GCS Bucket (ensure all 6 files are present).
+
+from google.cloud import storage
+import os
+
+GCS_BUCKET_NAME = "your-bucket-name"
+
+LOCAL_FILE_PATHS = [
+    "/mnt/data/yellow_tripdata_2024-01.parquet",
+    "/mnt/data/yellow_tripdata_2024-02.parquet",
+    "/mnt/data/yellow_tripdata_2024-03.parquet",
+    "/mnt/data/yellow_tripdata_2024-04.parquet",
+    "/mnt/data/yellow_tripdata_2024-05.parquet",
+    "/mnt/data/yellow_tripdata_2024-06.parquet",
+]
+
+storage_client = storage.Client()
+
+def upload_to_gcs():
+    bucket = storage_client.bucket(GCS_BUCKET_NAME)
+    for file_path in LOCAL_FILE_PATHS:
+        file_name = os.path.basename(file_path)
+        blob = bucket.blob(f"yellow_taxi/{file_name}")
+        blob.upload_from_filename(file_path)
+        print(f"Uploaded {file_name} to gs://{GCS_BUCKET_NAME}/yellow_taxi/")
+
+upload_to_gcs()
+
+2. Create BigQuery Tables
+ External Table: Use the Parquet files stored in GCS.
+
+CREATE OR REPLACE EXTERNAL TABLE `your_project_id.your_dataset_name.yellow_taxi_external`
+OPTIONS (
+  format = 'PARQUET',
+  uris = ['gs://your-bucket-name/yellow_taxi/*.parquet']
+);
+
+ Materialized Table: Load the same data into BigQuery without partitioning or clustering.
+
+CREATE OR REPLACE TABLE `your_project_id.your_dataset_name.yellow_taxi`
+AS 
+SELECT * FROM `your_project_id.your_dataset_name.yellow_taxi_external`;
+
+
+Q1: Record Count Run the following query to get the total record count:
+
+SELECT COUNT(*) 
+FROM `your_project.dataset.materialized_yellow_taxi`;
+
+Answer - 20,332,093
+
+
+Q2: Distinct PULocationIDs & Data Read Size
+
+SELECT COUNT(DISTINCT PULocationID) 
+FROM `your_project.dataset.external_yellow_taxi`;
+
+Compare with the materialized table:
+
+SELECT COUNT(DISTINCT PULocationID) 
+FROM `your_project.dataset.materialized_yellow_taxi`;
+
+Answer - 0 MB for the External Table and 155.12 MB for the Materialized Table
+
+Q3: Columnar Storage Impact Retrieve one column:
+
+SELECT PULocationID 
+FROM `your_project.dataset.materialized_yellow_taxi`;
+
+SELECT PULocationID, DOLocationID 
+FROM `your_project.dataset.materialized_yellow_taxi`;
+
+Answer - BigQuery is a columnar database, and it only scans the specific columns requested in the query. Querying two columns (PULocationID, DOLocationID) requires reading more data than querying one column (PULocationID), leading to a higher estimated number of bytes processed.
+
+Q4: Records with fare_amount = 0
+
+SELECT COUNT(*) 
+FROM `your_project.dataset.materialized_yellow_taxi` 
+WHERE fare_amount = 0;
+
+Answer - 546,578
+
+Q5: Optimized Table Strategy Since queries filter by tpep_dropoff_datetime and order by VendorID, use:
+
+CREATE TABLE `your_project.dataset.optimized_yellow_taxi`
+PARTITION BY tpep_dropoff_datetime
+CLUSTER BY VendorID
+AS
+SELECT * FROM `your_project.dataset.materialized_yellow_taxi`;
+
+Answer - Partition by tpep_dropoff_datetime and Cluster on VendorID
+
+Q6 Querying Partitioned vs. Non-Partitioned Tables Run the distinct VendorID query on both tables and compare estimated bytes:
+
+SELECT DISTINCT VendorID 
+FROM `your_project.dataset.materialized_yellow_taxi`
+WHERE tpep_dropoff_datetime BETWEEN '2024-03-01' AND '2024-03-15';
+
+Now, on the partitioned table:
+
+SELECT DISTINCT VendorID 
+FROM `your_project.dataset.optimized_yellow_taxi`
+WHERE tpep_dropoff_datetime BETWEEN '2024-03-01' AND '2024-03-15';
+
+Answer - 310.24 MB for non-partitioned table and 26.84 MB for the partitioned table
+
+Q7: External Table Storage Location
+ Answer - GCP Bucket 
+
+Q8: Always Cluster Data?
+ Answer - False (Only when queries benefit from clustering.)
+
 
