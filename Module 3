@@ -1,3 +1,33 @@
+1. Create a Google Cloud Account
+If you haven't already, sign up for a Google Cloud account: 👉 Google Cloud Console
+Google provides $300 free credits for new users.
+
+2. Enable BigQuery and Cloud Storage
+1. Go to the Google Cloud Console: https://console.cloud.google.com/
+2. Select your project:
+    * Click on the project dropdown (top left)
+    * Select "My First Project" (or create a new one if needed)
+3. Enable BigQuery & Cloud Storage APIs:
+    * Navigate to the API & Services > Library
+    * Search for BigQuery API → Click Enable
+    * Search for Cloud Storage API → Click Enable
+
+3. Install Google Cloud SDK
+Since you're using a MacBook M1, follow these steps:
+On Mac:
+1. Open Terminal
+2. Run this command to install Google Cloud SDK:  brew install --cask google-cloud-sdk 
+3. Restart your terminal and initialize the SDK:  gcloud init
+
+1. Authenticate:  gcloud auth login 
+2. Set your project:bash  gcloud config set project seraphic-port-448222-i9 
+4. Create a GCS Bucket
+1. Run the following command to create a bucket:  gsutil mb -l europe-west2 gs://your-bucket-name/  Replace your-bucket-name with a unique name (e.g., seraphic-port-data).
+2. To verify, list your buckets:  gsutil ls 
+
+
+
+
 1. Download & Upload Data
 Download the Yellow Taxi Trip Records for Jan 2024 – June 2024 from the NYC Taxi Data Portal.
 Upload these Parquet files to your GCS Bucket (ensure all 6 files are present).
@@ -31,77 +61,71 @@ upload_to_gcs()
 2. Create BigQuery Tables
  External Table: Use the Parquet files stored in GCS.
 
-CREATE OR REPLACE EXTERNAL TABLE `your_project_id.your_dataset_name.yellow_taxi_external`
+CREATE OR REPLACE EXTERNAL TABLE `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi_external`
 OPTIONS (
   format = 'PARQUET',
-  uris = ['gs://your-bucket-name/yellow_taxi/*.parquet']
+  uris = ['gs://yellow-taxi-data1/yellow_tripdata_2024-*.parquet']
 );
 
  Materialized Table: Load the same data into BigQuery without partitioning or clustering.
 
-CREATE OR REPLACE TABLE `your_project_id.your_dataset_name.yellow_taxi`
-AS 
-SELECT * FROM `your_project_id.your_dataset_name.yellow_taxi_external`;
+CREATE OR REPLACE TABLE `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`
+AS
+SELECT * FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi_external`;
 
 
 Q1: Record Count Run the following query to get the total record count:
 
-SELECT COUNT(*) 
-FROM `your_project.dataset.materialized_yellow_taxi`;
+SELECT COUNT(*) FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`;
 
 Answer - 20,332,093
 
 
 Q2: Distinct PULocationIDs & Data Read Size
 
-SELECT COUNT(DISTINCT PULocationID) 
-FROM `your_project.dataset.external_yellow_taxi`;
+SELECT COUNT(*) FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`;
 
 Compare with the materialized table:
 
-SELECT COUNT(DISTINCT PULocationID) 
-FROM `your_project.dataset.materialized_yellow_taxi`;
+SELECT COUNT(DISTINCT PULocationID) FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`;
 
 Answer - 0 MB for the External Table and 155.12 MB for the Materialized Table
 
+
 Q3: Columnar Storage Impact Retrieve one column:
 
-SELECT PULocationID 
-FROM `your_project.dataset.materialized_yellow_taxi`;
+SELECT PULocationID FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`;
 
-SELECT PULocationID, DOLocationID 
-FROM `your_project.dataset.materialized_yellow_taxi`;
+SELECT PULocationID, DOLocationID FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`;
 
 Answer - BigQuery is a columnar database, and it only scans the specific columns requested in the query. Querying two columns (PULocationID, DOLocationID) requires reading more data than querying one column (PULocationID), leading to a higher estimated number of bytes processed.
 
+
 Q4: Records with fare_amount = 0
 
-SELECT COUNT(*) 
-FROM `your_project.dataset.materialized_yellow_taxi` 
-WHERE fare_amount = 0;
+SELECT COUNT(*) FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi` WHERE fare_amount = 0;
 
-Answer - 546,578
+Answer - 8333
 
 Q5: Optimized Table Strategy Since queries filter by tpep_dropoff_datetime and order by VendorID, use:
 
-CREATE TABLE `your_project.dataset.optimized_yellow_taxi`
-PARTITION BY tpep_dropoff_datetime
+CREATE OR REPLACE TABLE `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi_partitioned`
+PARTITION BY DATE(tpep_dropoff_datetime)
 CLUSTER BY VendorID
 AS
-SELECT * FROM `your_project.dataset.materialized_yellow_taxi`;
+SELECT * FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`;
 
 Answer - Partition by tpep_dropoff_datetime and Cluster on VendorID
 
 Q6 Querying Partitioned vs. Non-Partitioned Tables Run the distinct VendorID query on both tables and compare estimated bytes:
 
-SELECT DISTINCT VendorID 
-FROM `your_project.dataset.materialized_yellow_taxi`
-WHERE tpep_dropoff_datetime BETWEEN '2024-03-01' AND '2024-03-15';
+SELECT DISTINCT VendorID FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`
+WHERE DATE(tpep_dropoff_datetime) BETWEEN '2024-03-01' AND '2024-03-15';
 
 Now, on the partitioned table:
 
 SELECT DISTINCT VendorID 
-FROM `your_project.dataset.optimized_yellow_taxi`
+FROM `seraphic-port-448222-i9.nyc_taxi_data.yellow_taxi`
 WHERE tpep_dropoff_datetime BETWEEN '2024-03-01' AND '2024-03-15';
 
 Answer - 310.24 MB for non-partitioned table and 26.84 MB for the partitioned table
