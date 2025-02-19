@@ -1,1 +1,79 @@
+#Question 1
 
+pip install 'dlt[duckdb]'
+
+Answer - dlt 1.6.1
+
+#Question 2
+
+#Use dlt to extract all pages of data from the API.
+
+import dlt
+import requests
+from dlt.sources.helpers.rest_client.paginators import PageNumberPaginator
+
+@dlt.resource
+def ny_taxi():
+    url = "https://us-central1-dlthub-analytics.cloudfunctions.net/data_engineering_zoomcamp_api"
+    
+    # Set up the paginator for page-based pagination
+    paginator = PageNumberPaginator()
+
+    # Starting page
+    page = 1
+    while True:
+        response = requests.get(url, params={'page': page})  # Get the data from the API
+        if response.status_code == 200:
+            data = response.json()  # Parse JSON response
+            if not data:  # No more data, stop the loop
+                break
+            for item in data:
+                yield item
+            page += 1  # Move to the next page
+        else:
+            print(f"Error: {response.status_code}")
+            break
+
+
+pipeline = dlt.pipeline(
+    pipeline_name="ny_taxi_pipeline",
+    destination="duckdb",
+    dataset_name="ny_taxi_data"
+)
+
+# Run the pipeline
+load_info = pipeline.run(ny_taxi)  # Run the pipeline with the defined resource
+print(load_info)
+
+#Start a connection to your database using native duckdb connection and look what tables were generated:
+
+import duckdb
+
+# Connect to the DuckDB database (using pipeline's name)
+conn = duckdb.connect(f"{pipeline.pipeline_name}.duckdb")
+
+# Set the search path to the dataset name
+conn.sql(f"SET search_path = '{pipeline.dataset_name}'")
+
+# Describe the dataset to see the tables
+tables = conn.sql("DESCRIBE").df()
+print(tables)
+
+#Question 3
+
+# List all tables in the current schema
+tables = conn.sql("SHOW TABLES").df()
+
+# Display the list of tables
+print(tables)
+
+conn.sql("SHOW TABLES").df()
+
+print(dir(pipeline))
+
+pipeline.run()
+
+import os
+
+db_file = f"{pipeline.pipeline_name}.duckdb"
+print("Database file exists:", os.path.exists(db_file))
