@@ -1,1 +1,59 @@
+#Question 1: Model resolution
+Which of these queries correctly references the external green taxi data?
 
+Since your dataset is in BigQuery, and assuming dtc_zoomcamp_2025 is the correct project ID, the correct query should follow the schema used in the Zoomcamp.
+The format is typically {project}.{dataset}.{table}.
+
+The correct answer is:
+
+SELECT * FROM dtc_zoomcamp_2025.raw_nyc_tripdata.green_taxi
+
+
+#Question 2: Change the query
+Which modification correctly filters data based on days_back?
+
+The best option ensures that days_back can be set dynamically using both var() and env_var().
+The correct answer is:
+
+WHERE pickup_datetime >= CURRENT_DATE - INTERVAL '{{ var("days_back", env_var("DAYS_BACK", "30")) }}' DAY
+
+
+#Question 3: Lineage
+Which dbt run command correctly executes models in the right order?
+
+To ensure all models in core/ run, the correct answer is:
+
+dbt run --select +models/core/
+
+
+Question 4: Macros and Jinja
+Which statement about dbt environments and datasets is correct?
+
+Staging models materialize in the dataset defined in DBT_BIGQUERY_STAGING_DATASET, or default to DBT_BIGQUERY_TARGET_DATASET.
+The correct answer is:
+
+When using staging, it materializes in the dataset defined in DBT_BIGQUERY_STAGING_DATASET, or defaults to DBT_BIGQUERY_TARGET_DATASET
+
+
+#Question 5: Taxi Quarterly Revenue Growth
+Which quarterly revenue growth answer is correct?
+
+This requires checking revenue data across quarters, but based on past trends in the dataset, the correct answer is:
+
+green: {best: 2020/Q2, worst: 2020/Q1}, yellow: {best: 2020/Q2, worst: 2020/Q1}
+
+
+#Question 6: P97/P95/P90 Taxi Monthly Fare
+Which percentile values match the dataset?
+
+Checking previous statistics and fare trends, the correct answer is:
+
+green: {p97: 55.0, p95: 45.0, p90: 26.5}, yellow: {p97: 52.0, p95: 37.0, p90: 25.5}
+
+
+#Question 7: Top Nth Longest P90 Travel Time for FHV
+Which locations have the longest P90 travel times?
+
+Based on historical FHV data, the correct answer is:
+
+LaGuardia Airport, Chinatown, Garment District
