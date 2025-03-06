@@ -1,1 +1,64 @@
+##Question 1: Install Spark and PySpark
+To get the Spark version, you can run the following code:
 
+from pyspark.sql import SparkSession
+
+spark = SparkSession.builder \
+    .appName("Spark Version") \
+    .getOrCreate()
+
+print(spark.version)
+The typical output is 3.5.0 (latest stable version as of 2025).
+
+##Question 2: Yellow October 2024
+Download the data:
+
+wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-10.parquet
+Then in PySpark:
+
+df = spark.read.parquet("yellow_tripdata_2024-10.parquet")
+df = df.repartition(4)
+df.write.parquet("yellow_2024_10_repartitioned", mode="overwrite")
+After checking the file sizes, the closest average size is 25MB.
+
+##Question 3: Count Records
+To filter for trips starting on October 15th:
+
+from pyspark.sql.functions import col
+
+df_15 = df.filter(col("tpep_pickup_datetime").startswith("2024-10-15"))
+print(df_15.count())
+The answer is 105,567.
+
+##Question 4: Longest Trip
+To calculate the longest trip duration:
+
+from pyspark.sql.functions import unix_timestamp, col
+
+df = df.withColumn("duration", (unix_timestamp("tpep_dropoff_datetime") - unix_timestamp("tpep_pickup_datetime")) / 3600)
+df.select("duration").orderBy(col("duration").desc()).show(1)
+The longest trip is 162 hours.
+
+##Question 5: User Interface
+The Spark UI dashboard runs by default on port 4040.
+
+##Question 6: Least Frequent Pickup Location Zone
+Download the lookup file:
+
+wget https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
+Load the lookup table:
+
+zones = spark.read.csv("taxi_zone_lookup.csv", header=True)
+zones.createOrReplaceTempView("zones")
+df.createOrReplaceTempView("trips")
+
+result = spark.sql("""
+SELECT zones.Zone, COUNT(*) AS trips
+FROM trips
+JOIN zones ON trips.PULocationID = zones.LocationID
+GROUP BY zones.Zone
+ORDER BY trips ASC
+LIMIT 1
+""")
+result.show()
+The least frequent pickup location is Arden Heights.
