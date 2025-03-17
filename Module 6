@@ -1,1 +1,88 @@
+##Question 1 
+docker exec -it redpanda-1 rpk version
 
+Answer - v23.3.1 (rev 9b3fd92)
+
+##Question 2 
+docker exec -it redpanda-1 rpk topic create green-trips
+
+Answer - 
+TOPIC    STATUS 
+green-trips Created
+
+##Question 3 
+Install kafka - pip install kafka-python
+
+Then, run this Python script:
+import json
+from kafka import KafkaProducer
+
+def json_serializer(data):
+    return json.dumps(data).encode('utf-8')
+
+server = 'localhost:9092'
+
+producer = KafkaProducer(
+    bootstrap_servers=[server],
+    value_serializer=json_serializer
+)
+
+print(producer.bootstrap_connected())
+
+Answer - True
+
+##Question 4 
+- Read the dataset and filter the required columns:
+
+import pandas as pd
+
+df = pd.read_csv("https://github.com/DataTalksClub/nyc-tlc-data/releases/download/green/green_tripdata_2019-10.csv.gz", compression='gzip')
+
+columns = [
+    'lpep_pickup_datetime',
+    'lpep_dropoff_datetime',
+    'PULocationID',
+    'DOLocationID',
+    'passenger_count',
+    'trip_distance',
+    'tip_amount'
+]
+
+df = df[columns]
+
+- Send the data to Kafka:
+
+from kafka import KafkaProducer
+from time import time
+import json
+
+producer = KafkaProducer(
+    bootstrap_servers=['localhost:9092'],
+    value_serializer=lambda x: json.dumps(x).encode('utf-8')
+)
+
+topic_name = 'green-trips'
+
+t0 = time()
+
+for _, row in df.iterrows():
+    message = row.to_dict()
+    producer.send(topic_name, value=message)
+
+producer.flush()
+
+t1 = time()
+took = t1 - t0
+print(f"Took {took} seconds")
+
+Answer - 15.8 seconds
+
+##Question 5 
+
+SELECT PULocationID, DOLocationID, COUNT(*) AS trip_streak
+FROM processed_events_aggregated
+GROUP BY PULocationID, DOLocationID
+ORDER BY trip_streak DESC
+LIMIT 1;
+
+Answer - PULocationID: 237, DOLocationID: 161, trip_streak: 128
