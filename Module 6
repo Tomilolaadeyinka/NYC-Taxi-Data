@@ -1,16 +1,16 @@
-##Question 1 
+## redpanda version
 docker exec -it redpanda-1 rpk version
 
 Answer - v23.3.1 (rev 9b3fd92)
 
-##Question 2 
+## create green trips
 docker exec -it redpanda-1 rpk topic create green-trips
 
 Answer - 
 TOPIC    STATUS 
 green-trips Created
 
-##Question 3 
+## install kafka 
 Install kafka - pip install kafka-python
 
 Then, run this Python script:
@@ -31,8 +31,7 @@ print(producer.bootstrap_connected())
 
 Answer - True
 
-##Question 4 
-- Read the dataset and filter the required columns:
+## Read the dataset and filter the required columns:
 
 import pandas as pd
 
@@ -77,7 +76,7 @@ print(f"Took {took} seconds")
 
 Answer - 15.8 seconds
 
-##Question 5 
+##
 
 SELECT PULocationID, DOLocationID, COUNT(*) AS trip_streak
 FROM processed_events_aggregated
