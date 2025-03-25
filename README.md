@@ -7,14 +7,15 @@ This project involves building an end-to-end data pipeline to process and analyz
 The aim of this project is to process green taxi data for the year 2021, transforming it into a structured dataset that can be used for further analysis. The pipeline is built using tools and services like Google Cloud Platform (GCP), BigQuery, Cloud Storage, and Apache Airflow for orchestration. The final output of the pipeline is stored in a data warehouse (BigQuery) for easy querying and analysis.
 
 ## Data Pipeline Stages
-# 1. Data Extraction (Extract)
+ 1. ** Data Extraction (Extract) **
 Source Data: The source of the data is the NYC Green Taxi dataset, which contains information on trips made by green taxis in New York City, including pickup and drop-off locations, timestamps, passenger count, and fare amounts.
 
 Cloud Storage: The data is extracted and loaded into Google Cloud Storage (GCS) buckets for further processing.
 
 Code : 
 
-``from google.cloud import storage
+```bash
+from google.cloud import storage
 
 Initialize a GCS client
 `client = storage.Client()
@@ -27,6 +28,7 @@ bucket = client.get_bucket(bucket_name)
 Upload the file to GCS
 `blob = bucket.blob(file_name)
 blob.upload_from_filename('local_path_to_file/nyc_green_taxi_data.csv')
+```
 
 # 2. Data Transformation (Transform)
 
