@@ -1,158 +1,167 @@
-## NYC-TAXI-DATA 
-## Docker-Terraform
+This project involves building an end-to-end data pipeline to process and analyze NYC taxi data using cloud technologies, batch processing, and data engineering principles. The pipeline integrates different stages of data processing, including ETL (Extract, Transform, Load), data warehousing, and analytics.
 
-### Understanding Docker First Run
-Command used:
-```bash
-"docker run -it --entrypoint bash python:3.12.8"
+## Project Overview
 
-#Output of pip --version
-pip --version
-pip 24.3.1 from /usr/local/lib/python3.12/site-packages/pip (python 3.12)
+The aim of this project is to process green taxi data for the year 2021, transforming it into a structured dataset that can be used for further analysis. The pipeline is built using tools and services like Google Cloud Platform (GCP), BigQuery, Cloud Storage, and Apache Airflow for orchestration. The final output of the pipeline is stored in a data warehouse (BigQuery) for easy querying and analysis.
 
-### Understanding Docker networking and docker-compose
-Commands used:
-"docker pull postgres"
+## Data Pipeline Stages
+# 1. Data Extraction (Extract)
+Source Data: The source of the data is the NYC Green Taxi dataset, which contains information on trips made by green taxis in New York City, including pickup and drop-off locations, timestamps, passenger count, and fare amounts.
 
-"docker run --name postgres-container -e POSTGRES_USER=your_user -e POSTGRES_PASSWORD=your_password -e POSTGRES_DB=your_database -p 5432:5432 -d postgres"
+Cloud Storage: The data is extracted and loaded into Google Cloud Storage (GCS) buckets for further processing.
 
-"docker run --name my_postgres -e POSTGRES_USER=your_user -e POSTGRES_PASSWORD=your_password -e POSTGRES_DB=your_database -p 5432:5432 -d postgres"
+Code : 
+`from google.cloud import storage
 
-"docker ps -a"
+# Initialize a GCS client
+`client = storage.Client()
 
-"docker start <container_name_or_id>"
+# Define the bucket and file to upload
+`bucket_name = 'my_bucket'
+file_name = 'nyc_green_taxi_data.csv'
+bucket = client.get_bucket(bucket_name)
 
-"docker exec -it postgres-container psql -U your_user -d your_database"
+# Upload the file to GCS
+`blob = bucket.blob(file_name)
+blob.upload_from_filename('local_path_to_file/nyc_green_taxi_data.csv')
 
-To find the process using port 5432
+## 2. Data Transformation (Transform)
 
-"sudo lsof -i :5432"
+The data is transformed using Apache Beam and PySpark for cleaning and reshaping the data. We ensure that the dataset is structured and ready for analysis by removing missing values, handling duplicates, and converting data types.
 
-"netstat -an | grep 5432"
+Code :
+`from pyspark.sql import SparkSession
+from pyspark.sql.functions import col
 
-*To kill the command running
+# Initialize Spark session
+`spark = SparkSession.builder \
+    .appName("NYC Green Taxi ETL") \
+    .getOrCreate()
 
-"sudo kill -9 806"
+# Load the data from GCS
+`data_path = "gs://my_bucket/nyc_green_taxi_data.csv"
+df = spark.read.option("header", "true").csv(data_path)
 
-To remove the already created postgresql
+# Data cleaning
+`df_cleaned = df.dropna() \
+               .dropDuplicates() \
+               .withColumn("pickup_datetime", col("pickup_datetime").cast("timestamp"))
 
-"docker rm postgres-container"
+df_cleaned.show(5)
 
-"docker stop postgres"
+## 3. Data Loading (Load)
 
-"docker rm postgres"
+The cleaned data is then loaded into BigQuery for storage and future analysis. We use Apache Airflow to automate the ETL pipeline and schedule the data loading jobs.
 
-"docker run --name postgres-container -e POSTGRES_PASSWORD=mysecretpassword -d postgres"
+Code :
+`from google.cloud import bigquery
 
-—To create docker volume 
+# Initialize BigQuery client
+`bq_client = bigquery.Client()
 
-"docker volume create --driver local --name my_postgres_volume"
+# Define the dataset and table names
+`dataset_id = 'my_project.my_dataset'
+table_id = 'nyc_taxi_data_2021'
 
-—— to create Postgres container 
+# Load the transformed data into BigQuery
+`df_cleaned.write \
+    .format('bigquery') \
+    .option('table', f'{dataset_id}.{table_id}') \
+    .mode('overwrite') \
+    .save()
 
-"docker run -d \
-  -v "/Users/tomilolaadeyinka/Data Engineering:/mnt/data" \
-  -p 5432:5432 \
-  --name my_postgres \
-  postgres"
+## 4. Orchestration with Apache Airflow
 
-—to load psql from docker
+Apache Airflow is used for scheduling and orchestrating the ETL workflow. We define the steps of the data pipeline as tasks in an Airflow DAG (Directed Acyclic Graph), which ensures that the process runs in a specified order and monitors task status.
 
-"docker exec -it my_postgres psql -U postgres"
+Code :
+`from airflow import DAG
+from airflow.operators.python_operator import PythonOperator
+from datetime import datetime
 
-### Trip Segmentation Count
+def extract_data():
+    # Logic to extract data
+    pass
 
-SELECT COUNT(*) AS up_to_1_mile
-FROM green_tripdata
-WHERE trip_distance <= 1
-  AND lpep_pickup_datetime >= '2019-10-01'
-  AND lpep_pickup_datetime < '2019-11-01';
+def transform_data():
+    # Logic to transform data
+    pass
 
-### Longest trip for each day
+def load_data():
+    # Logic to load data into BigQuery
+    pass
+
+# Define the Airflow DAG
+`dag = DAG('nyc_taxi_etl', description='ETL pipeline for NYC Green Taxi data',
+          schedule_interval='@daily', start_date=datetime(2025, 1, 1), catchup=False)
+
+# Define the tasks
+`task1 = PythonOperator(task_id='extract_data', python_callable=extract_data, dag=dag)
+task2 = PythonOperator(task_id='transform_data', python_callable=transform_data, dag=dag)
+task3 = PythonOperator(task_id='load_data', python_callable=load_data, dag=dag)
+
+# Set task dependencies
+task1 >> task2 >> task3
+
+## 5. Data Warehouse and Analytics
+
+Once the data is loaded into BigQuery, users can run SQL queries for further analysis. In this project, the data is used for generating insights into taxi trips, such as fare amounts, trip durations, and passenger counts.
+
+Example Query:
 
 SELECT 
-    DATE(lpep_pickup_datetime) AS pickup_day,
-    MAX(trip_distance) AS longest_trip_distance
+    pickup_datetime,
+    dropoff_datetime,
+    passenger_count,
+    fare_amount
 FROM 
-    green_tripdata
-GROUP BY 
-    DATE(lpep_pickup_datetime)
-ORDER BY 
-    longest_trip_distance DESC
-LIMIT 1;
- 
-### Three biggest pickup zones
-
-SELECT 
-    PULocationID AS pickup_location, 
-    SUM(total_amount) AS total_amount
-FROM 
-    green_tripdata
+    `my_project.my_dataset.nyc_taxi_data_2021`
 WHERE 
-    DATE(lpep_pickup_datetime) = '2019-10-18'
-GROUP BY 
-    PULocationID
-HAVING 
-    SUM(total_amount) > 13000
+    fare_amount > 10
 ORDER BY 
-    total_amount DESC;
+    pickup_datetime DESC
+LIMIT 100;
 
-### Largest tip
+## Technologies Used
 
-SELECT 
-    z_drop.zone AS dropoff_zone,
-    MAX(t.tip_amount) AS largest_tip
-FROM 
-    green_tripdata t
-JOIN 
-    taxi_zone_lookup z_pickup
-    ON t.pulocationid = z_pickup.locationid
-JOIN 
-    taxi_zone_lookup z_drop
-    ON t.dolocationid = z_drop.locationid
-WHERE 
-    z_pickup.zone = 'East Harlem North'
-    AND t.lpep_pickup_datetime BETWEEN '2019-10-01' AND '2019-10-31 23:59:59'
-GROUP BY 
-    z_drop.zone
-ORDER BY 
-    largest_tip DESC
-LIMIT 1;
+# Apache Airflow: Used for scheduling and orchestrating the ETL pipeline.
 
-### Question 7. Terraform Workflow
+# PySpark: For data transformation, cleaning, and reshaping.
 
-—Install google cloud
-"curl https://sdk.cloud.google.com | bash"
+# Google Cloud Storage: For storing raw data files.
 
-"gcloud init"
+# Google BigQuery: For storing processed data in a data warehouse for analytics.
 
-"touch variables.tf"
-
-"variable "project" {
-  description = "Google Cloud Project ID"
-  type        = string
-}"
-
-"touch main.tf"
-
-"provider "google" {
-  project = var.project
-  region  = "us-central1"  # Change to your region
-}"
-
-"resource "google_storage_bucket" "my_bucket" {
-  name     = "my-unique-bucket-name"  # Make sure this is a unique bucket name
-  location = "US"
-}"
-
-"gcloud auth login"
-
-"gcloud config set project seraphic-port-448222-i9"
-
-"terraform init"
-
-"terraform plan -var="project=seraphic-port-448222-i9"
-
-"terraform destroy"
+# Apache Beam: For handling large-scale data processing
 
 
+## Steps to Run the Project
+
+# 1. Set Up Google Cloud Environment:
+
+Create a Google Cloud project and enable the necessary APIs (BigQuery, Cloud Storage, etc.).
+
+Authenticate using `gcloud auth login.
+
+# 2. Clone the Repository:
+
+`git clone https://github.com/your-username/nyc-taxi-data-pipeline.git
+cd nyc-taxi-data-pipeline
+
+# 3. Install Dependencies:
+
+`pip install -r requirements.txt
+
+# 4. Run the Pipeline:
+
+You can execute the pipeline manually or schedule it using Apache Airflow.
+
+Ensure that you configure the BigQuery and GCS credentials in your environment.
+
+# 5. Query the Data in BigQuery:
+
+Once the data is loaded, you can run SQL queries in BigQuery to analyze it.
+
+
+
+    
