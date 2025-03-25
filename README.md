@@ -13,7 +13,6 @@ Source Data: The source of the data is the NYC Green Taxi dataset, which contain
 
 Cloud Storage: The data is extracted and loaded into Google Cloud Storage (GCS) buckets for further processing.
 
-Code : 
 
 ```bash
 from google.cloud import storage
@@ -35,7 +34,6 @@ blob.upload_from_filename('local_path_to_file/nyc_green_taxi_data.csv')
 
 The data is transformed using Apache Beam and PySpark for cleaning and reshaping the data. We ensure that the dataset is structured and ready for analysis by removing missing values, handling duplicates, and converting data types.
 
-Code :
 
 ```bash
 from pyspark.sql import SparkSession
@@ -62,7 +60,6 @@ df_cleaned.show(5)
 
 The cleaned data is then loaded into BigQuery for storage and future analysis. We use Apache Airflow to automate the ETL pipeline and schedule the data loading jobs.
 
-Code :
 
 ```bash
 from google.cloud import bigquery
@@ -86,7 +83,6 @@ Load the transformed data into BigQuery
 
 Apache Airflow is used for scheduling and orchestrating the ETL workflow. We define the steps of the data pipeline as tasks in an Airflow DAG (Directed Acyclic Graph), which ensures that the process runs in a specified order and monitors task status.
 
-Code :
 
 ```bash
 from airflow import DAG
@@ -122,7 +118,6 @@ task1 >> task2 >> task3
 
 Once the data is loaded into BigQuery, users can run SQL queries for further analysis. In this project, the data is used for generating insights into taxi trips, such as fare amounts, trip durations, and passenger counts.
 
-Example Query:
 
 ```bash
 SELECT 
