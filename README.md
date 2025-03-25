@@ -1,7 +1,7 @@
-# data-engineering-bootcamp-homework
-## Module 1 Homework: Docker-Terraform
+## NYC-TAXI-DATA 
+## Docker-Terraform
 
-### Question 1. Understanding Docker First Run
+### Understanding Docker First Run
 Command used:
 ```bash
 "docker run -it --entrypoint bash python:3.12.8"
@@ -10,7 +10,7 @@ Command used:
 pip --version
 pip 24.3.1 from /usr/local/lib/python3.12/site-packages/pip (python 3.12)
 
-### Question 2. Understanding Docker networking and docker-compose
+### Understanding Docker networking and docker-compose
 Commands used:
 "docker pull postgres"
 
@@ -60,7 +60,7 @@ To remove the already created postgresql
 
 "docker exec -it my_postgres psql -U postgres"
 
-### Question 3. Trip Segmentation Count
+### Trip Segmentation Count
 
 SELECT COUNT(*) AS up_to_1_mile
 FROM green_tripdata
@@ -68,7 +68,7 @@ WHERE trip_distance <= 1
   AND lpep_pickup_datetime >= '2019-10-01'
   AND lpep_pickup_datetime < '2019-11-01';
 
-### Question 4. Longest trip for each day
+### Longest trip for each day
 
 SELECT 
     DATE(lpep_pickup_datetime) AS pickup_day,
@@ -81,7 +81,7 @@ ORDER BY
     longest_trip_distance DESC
 LIMIT 1;
  
-### Question 5. Three biggest pickup zones
+### Three biggest pickup zones
 
 SELECT 
     PULocationID AS pickup_location, 
@@ -97,7 +97,7 @@ HAVING
 ORDER BY 
     total_amount DESC;
 
-### Question 6. Largest tip
+### Largest tip
 
 SELECT 
     z_drop.zone AS dropoff_zone,
