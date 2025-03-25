@@ -13,7 +13,8 @@ Source Data: The source of the data is the NYC Green Taxi dataset, which contain
 Cloud Storage: The data is extracted and loaded into Google Cloud Storage (GCS) buckets for further processing.
 
 Code : 
-`from google.cloud import storage
+
+``from google.cloud import storage
 
 Initialize a GCS client
 `client = storage.Client()
@@ -32,7 +33,8 @@ blob.upload_from_filename('local_path_to_file/nyc_green_taxi_data.csv')
 The data is transformed using Apache Beam and PySpark for cleaning and reshaping the data. We ensure that the dataset is structured and ready for analysis by removing missing values, handling duplicates, and converting data types.
 
 Code :
-`from pyspark.sql import SparkSession
+
+``from pyspark.sql import SparkSession
 from pyspark.sql.functions import col
 
 Initialize Spark session
@@ -56,7 +58,8 @@ df_cleaned.show(5)
 The cleaned data is then loaded into BigQuery for storage and future analysis. We use Apache Airflow to automate the ETL pipeline and schedule the data loading jobs.
 
 Code :
-`from google.cloud import bigquery
+
+``from google.cloud import bigquery
 
 Initialize BigQuery client
 `bq_client = bigquery.Client()
@@ -77,7 +80,8 @@ Load the transformed data into BigQuery
 Apache Airflow is used for scheduling and orchestrating the ETL workflow. We define the steps of the data pipeline as tasks in an Airflow DAG (Directed Acyclic Graph), which ensures that the process runs in a specified order and monitors task status.
 
 Code :
-`from airflow import DAG
+
+``from airflow import DAG
 from airflow.operators.python_operator import PythonOperator
 from datetime import datetime
 
@@ -143,16 +147,16 @@ Apache Beam: For handling large-scale data processing
 
 Create a Google Cloud project and enable the necessary APIs (BigQuery, Cloud Storage, etc.).
 
-Authenticate using `gcloud auth login.
+Authenticate using ``gcloud auth login.
 
 # 2. Clone the Repository:
 
-`git clone https://github.com/your-username/nyc-taxi-data-pipeline.git
+``git clone https://github.com/your-username/nyc-taxi-data-pipeline.git
 cd nyc-taxi-data-pipeline
 
 # 3. Install Dependencies:
 
-`pip install -r requirements.txt
+``pip install -r requirements.txt
 
 # 4. Run the Pipeline:
 
