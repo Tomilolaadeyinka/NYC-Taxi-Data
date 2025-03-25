@@ -1,4 +1,4 @@
-##Question 1: Install Spark and PySpark
+## Install Spark and PySpark
 To get the Spark version, you can run the following code:
 
 from pyspark.sql import SparkSession
@@ -10,7 +10,7 @@ spark = SparkSession.builder \
 print(spark.version)
 The typical output is 3.5.0 (latest stable version as of 2025).
 
-##Question 2: Yellow October 2024
+## Yellow October 2024
 Download the data:
 
 wget https://d37ci6vzurychx.cloudfront.net/trip-data/yellow_tripdata_2024-10.parquet
@@ -21,7 +21,7 @@ df = df.repartition(4)
 df.write.parquet("yellow_2024_10_repartitioned", mode="overwrite")
 After checking the file sizes, the closest average size is 25MB.
 
-##Question 3: Count Records
+## Count Records
 To filter for trips starting on October 15th:
 
 from pyspark.sql.functions import col
@@ -30,7 +30,7 @@ df_15 = df.filter(col("tpep_pickup_datetime").startswith("2024-10-15"))
 print(df_15.count())
 The answer is 105,567.
 
-##Question 4: Longest Trip
+## Longest Trip
 To calculate the longest trip duration:
 
 from pyspark.sql.functions import unix_timestamp, col
@@ -39,10 +39,10 @@ df = df.withColumn("duration", (unix_timestamp("tpep_dropoff_datetime") - unix_t
 df.select("duration").orderBy(col("duration").desc()).show(1)
 The longest trip is 162 hours.
 
-##Question 5: User Interface
+## User Interface
 The Spark UI dashboard runs by default on port 4040.
 
-##Question 6: Least Frequent Pickup Location Zone
+## Least Frequent Pickup Location Zone
 Download the lookup file:
 
 wget https://d37ci6vzurychx.cloudfront.net/misc/taxi_zone_lookup.csv
